@@ -231,7 +231,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         .setFooter({ text: `ID: ${interaction.user.id}` })
         .setTimestamp();
 
-      await archiveChannel.send({ embeds: [embed] });
+      await archiveChannel.send({ content: `${interaction.user}`, embeds: [embed] });
 
       // T-06 / I-01: remove 다오콘, then add 다오랩-프렌즈 + set nickname
       const member = interaction.member;
