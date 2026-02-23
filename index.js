@@ -14,6 +14,13 @@ const {
   Events,
 } = require('discord.js');
 
+// --- 로거 ---
+const log = {
+  info: (phase, msg) => console.log(`[${phase}] ${msg}`),
+  warn: (phase, msg) => console.warn(`[${phase}] WARN ${msg}`),
+  error: (phase, msg, err) => console.error(`[${phase}] ERROR ${msg}`, err?.message ?? err ?? ''),
+};
+
 // --- 환경변수 검증 ---
 const REQUIRED_ENV = [
   'DISCORD_TOKEN',
@@ -27,7 +34,7 @@ const REQUIRED_ENV = [
 
 const missing = REQUIRED_ENV.filter((key) => !process.env[key]);
 if (missing.length > 0) {
-  console.error(`Missing required environment variables: ${missing.join(', ')}`);
+  log.error('INIT', `missing env vars | keys=${missing.join(', ')}`);
   process.exit(1);
 }
 
@@ -58,21 +65,22 @@ let welcomeMessageUrl = null;
 
 // --- 초기화 ---
 client.once(Events.ClientReady, async () => {
-  console.log(`Logged in as ${client.user.tag}`);
+  log.info('INIT', `bot ready | tag=${client.user.tag}`);
 
   try {
     const guild = await client.guilds.fetch(GUILD_ID);
     await cacheInvites(guild);
     await ensureWelcomeMessage(guild);
+    log.info('INIT', 'startup complete');
   } catch (error) {
-    console.error('Failed to initialize bot:', error);
+    log.error('INIT', 'startup failed', error);
   }
 });
 
 async function cacheInvites(guild) {
   const invites = await guild.invites.fetch();
   invites.forEach((invite) => inviteCache.set(invite.code, invite.uses));
-  console.log(`Cached ${inviteCache.size} invites`);
+  log.info('INIT', `invites cached | count=${inviteCache.size}`);
 }
 
 async function ensureWelcomeMessage(guild) {
@@ -85,10 +93,11 @@ async function ensureWelcomeMessage(guild) {
 
   if (existing) {
     welcomeMessageUrl = existing.url;
-    console.log(`Welcome button message found: ${welcomeMessageUrl}`);
     if (!existing.pinned) {
       await existing.pin();
-      console.log('Existing welcome button message pinned');
+      log.info('INIT', `welcome msg pinned | url=${welcomeMessageUrl}`);
+    } else {
+      log.info('INIT', `welcome msg exists | url=${welcomeMessageUrl}`);
     }
     return;
   }
@@ -105,36 +114,73 @@ async function ensureWelcomeMessage(guild) {
       '**다오랩 프렌즈에 오신 것을 환영합니다!**\n\n아래 버튼을 클릭하여 자기소개를 작성해주세요.',
     components: [row],
   });
-  await msg.pin().catch((err) => console.error('Failed to pin welcome message:', err));
+  await msg.pin().catch((err) => log.error('INIT', 'welcome msg pin failed', err));
   welcomeMessageUrl = msg.url;
-  console.log(`Welcome button message created and pinned: ${welcomeMessageUrl}`);
+  log.info('INIT', `welcome msg created + pinned | url=${welcomeMessageUrl}`);
 }
 
 // --- 멤버 입장 처리 ---
 client.on(Events.GuildMemberAdd, async (member) => {
   if (member.guild.id !== GUILD_ID) return;
 
+  const tag = member.user.tag;
+  const uid = member.user.id;
+  log.info('JOIN', `member joined | user=${tag} uid=${uid}`);
+
   try {
     const usedInvite = await detectUsedInvite(member.guild);
-    if (!usedInvite || usedInvite.code !== TARGET_INVITE_CODE) return;
+
+    if (!usedInvite) {
+      log.warn('JOIN', `invite undetected — possible race | user=${tag}`);
+      return;
+    }
+
+    log.info(
+      'JOIN',
+      `invite detected | user=${tag} code=${usedInvite.code} uses=${usedInvite.uses}`,
+    );
+
+    if (usedInvite.code !== TARGET_INVITE_CODE) {
+      log.info('JOIN', `non-target invite — skip | user=${tag} code=${usedInvite.code}`);
+      return;
+    }
 
     await member.roles.add(DAOCON_ROLE_ID);
-    console.log(`Assigned 다오콘 role to ${member.user.tag} (invite: ${usedInvite.code})`);
+    log.info('JOIN', `다오콘 role assigned | user=${tag}`);
 
     await notifyNewMember(member);
+    log.info('JOIN', `notification sent | user=${tag}`);
   } catch (error) {
-    console.error(`Failed to process member join for ${member.user.tag}:`, error);
+    log.error('JOIN', `member join failed | user=${tag}`, error);
   }
 });
 
 async function detectUsedInvite(guild) {
   const newInvites = await guild.invites.fetch();
   const used = newInvites.find((invite) => (inviteCache.get(invite.code) ?? 0) < invite.uses);
-  newInvites.forEach((invite) => inviteCache.set(invite.code, invite.uses));
+
+  // A-05 모니터링: 캐시 diff 로깅
+  const changes = [];
+  newInvites.forEach((invite) => {
+    const prev = inviteCache.get(invite.code) ?? 0;
+    if (prev !== invite.uses) {
+      changes.push(`${invite.code}:${prev}->${invite.uses}`);
+    }
+    inviteCache.set(invite.code, invite.uses);
+  });
+
+  if (changes.length > 1) {
+    log.warn('INVITE', `multiple invite changes — race possible | diff=[${changes.join(', ')}]`);
+  } else if (changes.length === 1) {
+    log.info('INVITE', `cache updated | diff=[${changes[0]}]`);
+  }
+
   return used;
 }
 
 async function notifyNewMember(member) {
+  const tag = member.user.tag;
+
   const dmMessage =
     `${member}님, **다오랩 프렌즈**에 오신 것을 환영합니다! 🎉\n\n` +
     `온보딩을 완료하려면 아래 링크를 클릭해서 **온보딩 시작하기** 버튼을 눌러주세요.\n` +
@@ -143,14 +189,13 @@ async function notifyNewMember(member) {
     `${member}님, **다오랩 프렌즈**에 오신 것을 환영합니다! 🎉\n\n` +
     `온보딩을 완료하려면 <#${WELCOME_CHANNEL_ID}> 채널에서 **온보딩 시작하기** 버튼을 클릭해주세요.`;
 
-  await member.send(dmMessage).catch((err) => {
-    console.error(`Failed to send DM to ${member.user.tag}:`, err);
-  });
+  const dmSent = await member.send(dmMessage).catch(() => null);
+  if (!dmSent) log.warn('NOTIFY', `DM blocked | user=${tag}`);
 
   const channel = await member.guild.channels.fetch(WELCOME_CHANNEL_ID).catch(() => null);
   if (channel) {
     await channel.send(channelMessage).catch((err) => {
-      console.error(`Failed to send welcome message for ${member.user.tag}:`, err);
+      log.error('NOTIFY', `channel msg failed | user=${tag}`, err);
     });
   }
 }
@@ -167,8 +212,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
 async function handleButtonClick(interaction) {
   const { member } = interaction;
+  const tag = interaction.user.tag;
 
   if (member.roles.cache.has(DAOFRIENDS_ROLE_ID)) {
+    log.info('BUTTON', `already onboarded — reject | user=${tag}`);
     return interaction.reply({
       content: '이미 온보딩을 완료하셨습니다.',
       flags: MessageFlags.Ephemeral,
@@ -176,6 +223,7 @@ async function handleButtonClick(interaction) {
   }
 
   if (!member.roles.cache.has(DAOCON_ROLE_ID)) {
+    log.warn('BUTTON', `no 다오콘 role — reject | user=${tag}`);
     return interaction.reply({
       content: '온보딩 대상이 아닙니다. 다오콘 역할이 필요합니다.',
       flags: MessageFlags.Ephemeral,
@@ -231,11 +279,16 @@ async function handleButtonClick(interaction) {
     ),
   );
 
+  log.info('BUTTON', `modal shown | user=${tag}`);
   return interaction.showModal(modal);
 }
 
 async function handleModalSubmit(interaction) {
+  const tag = interaction.user.tag;
+  const uid = interaction.user.id;
+
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  log.info('MODAL', `submit received | user=${tag} uid=${uid}`);
 
   const fields = {
     realname: interaction.fields.getTextInputValue('q1_realname'),
@@ -247,12 +300,14 @@ async function handleModalSubmit(interaction) {
 
   try {
     await archiveIntroduction(interaction, fields);
+    log.info('MODAL', `archived | user=${tag} nickname=${fields.nickname}`);
+
     await completeOnboarding(interaction.member, fields.nickname);
+    log.info('MODAL', `onboarding complete | user=${tag} nickname=${fields.nickname}`);
 
     await interaction.editReply('✅ 온보딩이 완료되었습니다! 다오랩-프렌즈 역할이 부여되었습니다.');
-    console.log(`Onboarding completed for ${interaction.user.tag}`);
   } catch (error) {
-    console.error(`Onboarding failed for ${interaction.user.tag}:`, error);
+    log.error('MODAL', `onboarding failed | user=${tag}`, error);
     await interaction.editReply('온보딩 처리 중 오류가 발생했습니다. 관리자에게 문의해주세요.');
   }
 }
@@ -278,11 +333,15 @@ async function archiveIntroduction(interaction, fields) {
 }
 
 async function completeOnboarding(member, nickname) {
+  const tag = member.user.tag;
+
   await member.setNickname(nickname).catch((err) => {
-    console.error(`Failed to set nickname for ${member.user.tag}:`, err);
+    log.warn('ROLE', `nickname set failed — continue | user=${tag}`, err);
   });
   await member.roles.remove(DAOCON_ROLE_ID);
+  log.info('ROLE', `다오콘 removed | user=${tag}`);
   await member.roles.add(DAOFRIENDS_ROLE_ID);
+  log.info('ROLE', `다오랩-프렌즈 added | user=${tag}`);
 }
 
 client.login(DISCORD_TOKEN);
