@@ -78,9 +78,10 @@ client.once(Events.ClientReady, async () => {
       console.error('Failed to pin welcome message:', err);
     });
     welcomeMessageUrl = buttonMsg.url;
-    console.log('Welcome button message created and pinned');
+    console.log(`Welcome button message created and pinned: ${welcomeMessageUrl}`);
   } else {
     welcomeMessageUrl = existingButton.url;
+    console.log(`Welcome button message found: ${welcomeMessageUrl}`);
     // 기존 메시지가 핀되어 있지 않으면 핀
     if (!existingButton.pinned) {
       await existingButton.pin().catch((err) => {
