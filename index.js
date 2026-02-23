@@ -68,14 +68,25 @@ client.once(Events.ClientReady, async () => {
         .setStyle(ButtonStyle.Primary),
     );
 
-    await welcomeChannel.send({
+    const buttonMsg = await welcomeChannel.send({
       content:
         '**다오랩 프렌즈에 오신 것을 환영합니다!**\n\n아래 버튼을 클릭하여 자기소개를 작성해주세요.',
       components: [row],
     });
-    console.log('Welcome button message created');
+    await buttonMsg.pin().catch((err) => {
+      console.error('Failed to pin welcome message:', err);
+    });
+    console.log('Welcome button message created and pinned');
   } else {
-    console.log('Welcome button message already exists');
+    // 기존 메시지가 핀되어 있지 않으면 핀
+    if (!existingButton.pinned) {
+      await existingButton.pin().catch((err) => {
+        console.error('Failed to pin existing welcome message:', err);
+      });
+      console.log('Existing welcome button message pinned');
+    } else {
+      console.log('Welcome button message already exists and pinned');
+    }
   }
 });
 
