@@ -2,7 +2,7 @@
 
 Version: 0.1.0 | Status: Draft
 
-**Executive Summary**: 특정 Discord 초대코드로 입장한 사용자에게 자동으로 `다오콘` 역할을 부여하고, 서버 내 환영 채널의 고정 버튼을 통해 4문항 모달을 표시하여 온보딩을 완료한 사용자에게 `다오랩-프렌즈` 역할을 부여하는 봇을 명세한다.
+**Executive Summary**: 특정 Discord 초대코드로 입장한 사용자에게 자동으로 `다오콘` 역할을 부여하고, 서버 내 환영 채널의 고정 버튼을 통해 5문항 모달(실명, 닉네임, 자기소개, 경험, 기대사항)을 표시하여 온보딩을 완료한 사용자에게 `다오랩-프렌즈` 역할을 부여하고 닉네임으로 서버 표시 이름을 변경하는 봇을 명세한다.
 
 ## 1. Problem Frame
 
@@ -17,12 +17,12 @@ Version: 0.1.0 | Status: Draft
 
 **Shared Phenomena:**
 
-| Interface | Domain A      | Domain B      | Phenomena                                       |
-| --------- | ------------- | ------------- | ----------------------------------------------- |
-| IF-01     | Discord User  | Discord API   | 초대코드 클릭, 서버 입장, 버튼 클릭, 모달 제출  |
-| IF-02     | Discord API   | Bot           | guildMemberAdd 이벤트, interactionCreate 이벤트 |
-| IF-03     | Bot           | Discord Guild | roles.add/remove, channels.send, invites.fetch  |
-| IF-04     | Discord Guild | Discord User  | 역할 표시, 채널 접근 권한, 메시지 표시          |
+| Interface | Domain A      | Domain B      | Phenomena                                                           |
+| --------- | ------------- | ------------- | ------------------------------------------------------------------- |
+| IF-01     | Discord User  | Discord API   | 초대코드 클릭, 서버 입장, 버튼 클릭, 모달 제출                      |
+| IF-02     | Discord API   | Bot           | guildMemberAdd 이벤트, interactionCreate 이벤트                     |
+| IF-03     | Bot           | Discord Guild | roles.add/remove, channels.send, invites.fetch, members.setNickname |
+| IF-04     | Discord Guild | Discord User  | 역할 표시, 채널 접근 권한, 메시지 표시                              |
 
 **Context Diagram:**
 
@@ -76,17 +76,26 @@ Version: 0.1.0 | Status: Draft
 - Validation: **Assumed** (대량 동시 입장 시 경합 조건 가능)
 - Impact if False: 일부 사용자에게 다오콘 역할 미부여
 
+**A-06: 서버 닉네임 변경 제약**
+
+- Statement: "봇은 Manage Nicknames 권한으로 일반 멤버의 닉네임을 변경할 수 있지만, 서버 소유자의 닉네임은 변경할 수 없다"
+- Justification: Discord API 권한 계층 규칙
+- Validation: **Validated**
+- Impact if False: 없음 (API 제약)
+- 구현 영향: 닉네임 변경 실패 시 에러 로깅만 수행하고 온보딩 플로우는 계속 진행
+
 ## 3. Requirements
 
 ### 3.1 Business Requirements (Optative)
 
-| ID   | Requirement                                                         | Priority |
-| ---- | ------------------------------------------------------------------- | -------- |
-| R-01 | 특정 초대코드로 입장한 사용자는 자동으로 온보딩 절차를 밟아야 한다  | Must     |
-| R-02 | 사용자는 4문항(이름/닉네임, 자기소개, 경험, 기대사항)에 답해야 한다 | Must     |
-| R-03 | 답변은 `다오랩-프렌즈-소개` 채널에 아카이빙되어야 한다              | Must     |
-| R-04 | 온보딩 완료 시 `다오랩-프렌즈` 역할이 부여되어야 한다               | Must     |
-| R-05 | 온보딩 과정이 다른 사용자에게 도배되지 않아야 한다                  | Should   |
+| ID   | Requirement                                                          | Priority |
+| ---- | -------------------------------------------------------------------- | -------- |
+| R-01 | 특정 초대코드로 입장한 사용자는 자동으로 온보딩 절차를 밟아야 한다   | Must     |
+| R-02 | 사용자는 5문항(실명, 닉네임, 자기소개, 경험, 기대사항)에 답해야 한다 | Must     |
+| R-03 | 답변은 `다오랩-프렌즈-소개` 채널에 아카이빙되어야 한다               | Must     |
+| R-04 | 온보딩 완료 시 `다오랩-프렌즈` 역할이 부여되어야 한다                | Must     |
+| R-05 | 온보딩 과정이 다른 사용자에게 도배되지 않아야 한다                   | Should   |
+| R-06 | 온보딩 완료 시 닉네임으로 서버 표시 이름이 변경되어야 한다           | Should   |
 
 ### 3.2 Requirement Progression
 
@@ -113,15 +122,16 @@ L2 (Machine Spec): "봇 시작 시 환영 채널에 버튼 메시지 1회 생성
 
 ### 3.3 Technical Requirements (Derived)
 
-| ID   | From | Technical Requirement                                             |
-| ---- | ---- | ----------------------------------------------------------------- |
-| T-01 | R-01 | 봇 시작 시 guild.invites.fetch()로 초대코드 캐시 생성             |
-| T-02 | R-01 | guildMemberAdd에서 캐시 비교로 초대코드 판별                      |
-| T-03 | R-01 | 대상 초대코드 사용자에게 DAOCON_ROLE_ID 부여                      |
-| T-04 | R-02 | 버튼 클릭 시 4개 TextInput 포함 모달 표시. q2_intro minLength: 50 |
-| T-05 | R-03 | 모달 제출 시 ARCHIVE_CHANNEL_ID에 Embed 전송                      |
-| T-06 | R-04 | 아카이빙 성공 후 다오콘 제거 + 다오랩-프렌즈 부여                 |
-| T-07 | R-05 | 환영 채널에 고정 버튼 메시지 1개 유지. 응답은 ephemeral           |
+| ID   | From | Technical Requirement                                                                           |
+| ---- | ---- | ----------------------------------------------------------------------------------------------- |
+| T-01 | R-01 | 봇 시작 시 guild.invites.fetch()로 초대코드 캐시 생성                                           |
+| T-02 | R-01 | guildMemberAdd에서 캐시 비교로 초대코드 판별                                                    |
+| T-03 | R-01 | 대상 초대코드 사용자에게 DAOCON_ROLE_ID 부여                                                    |
+| T-04 | R-02 | 버튼 클릭 시 5개 TextInput 포함 모달 표시 (실명, 닉네임, 자기소개 minLength:50, 경험, 기대사항) |
+| T-05 | R-03 | 모달 제출 시 ARCHIVE_CHANNEL_ID에 Embed 전송                                                    |
+| T-06 | R-04 | 아카이빙 성공 후 다오콘 제거 + 다오랩-프렌즈 부여                                               |
+| T-07 | R-05 | 환영 채널에 고정 버튼 메시지 1개 유지. 응답은 ephemeral                                         |
+| T-08 | R-06 | 모달 제출 시 member.setNickname(닉네임) 호출. 실패 시 로깅 후 계속 진행                         |
 
 ## 4. Specification
 
@@ -136,7 +146,7 @@ L2 (Machine Spec): "봇 시작 시 환영 채널에 버튼 메시지 1회 생성
 Transitions:
 
 - (없음) → 다오콘: TARGET_INVITE_CODE로 입장 시 자동 부여
-- 다오콘 → 다오랩-프렌즈: 모달 4문항 제출 + 아카이빙 성공 시 (다오콘 제거 + 다오랩-프렌즈 부여)
+- 다오콘 → 다오랩-프렌즈: 모달 5문항 제출 + 아카이빙 성공 시 (닉네임 변경 + 다오콘 제거 + 다오랩-프렌즈 부여)
 
 ### 4.2 Invariants
 
@@ -159,32 +169,33 @@ Transitions:
 **Button Interaction (start_onboarding):**
 
 - Pre: 클릭한 사용자가 다오콘 역할 보유
-- Action: interaction.showModal() with 4 TextInputs
+- Action: interaction.showModal() with 5 TextInputs (실명, 닉네임, 자기소개, 경험, 기대사항)
 - Post: 모달 표시됨
 - Error: 다오콘 역할 없으면 ephemeral 거부 메시지
 
 **Modal Submit (onboarding_modal):**
 
-- Pre: 4개 필드 모두 입력, q2_intro >= 50자
+- Pre: 5개 필드 모두 입력, q2_intro >= 50자
 - Action 순서:
   1. interaction.deferReply({ flags: MessageFlags.Ephemeral })
   2. archiveChannel.send(Embed)
-  3. member.roles.remove(DAOCON_ROLE_ID)
-  4. member.roles.add(DAOFRIENDS_ROLE_ID)
-  5. interaction.editReply(성공 메시지)
+  3. member.setNickname(닉네임) — 실패 시 로깅 후 계속 (A-06)
+  4. member.roles.remove(DAOCON_ROLE_ID)
+  5. member.roles.add(DAOFRIENDS_ROLE_ID)
+  6. interaction.editReply(성공 메시지)
 - Post: 아카이브 완료 + 역할 교체 완료
 - Error: 중간 실패 시 ephemeral 에러 메시지
 
 ## 5. Verification
 
-| Scenario            | Scope     | Given                 | When                         | Then                                                   |
-| ------------------- | --------- | --------------------- | ---------------------------- | ------------------------------------------------------ |
-| 정상 온보딩         | 1 user    | 대상 초대코드로 입장  | 버튼 클릭 → 모달 작성 → 제출 | 아카이브 Embed 생성 + 다오콘 제거 + 다오랩-프렌즈 부여 |
-| 비대상 초대코드     | 1 user    | 다른 초대코드로 입장  | 서버 입장                    | 다오콘 역할 부여되지 않음                              |
-| 역할 없이 버튼 클릭 | 1 user    | 다오콘 역할 없음      | 버튼 클릭                    | ephemeral 거부 메시지                                  |
-| I-01 검증           | 1 user    | 다오콘 역할 보유      | 모달 제출 완료               | 다오콘 없음 AND 다오랩-프렌즈 있음                     |
-| I-03 검증           | 봇 재시작 | 기존 버튼 메시지 존재 | 봇 재시작                    | 새 버튼 메시지 생성 안 함                              |
-| 최소 글자수         | 1 user    | 다오콘 역할 보유      | 자기소개 49자 입력           | 모달 제출 불가 (Discord 클라이언트 자체 검증)          |
+| Scenario            | Scope     | Given                 | When                         | Then                                                                 |
+| ------------------- | --------- | --------------------- | ---------------------------- | -------------------------------------------------------------------- |
+| 정상 온보딩         | 1 user    | 대상 초대코드로 입장  | 버튼 클릭 → 모달 작성 → 제출 | 아카이브 Embed 생성 + 닉네임 변경 + 다오콘 제거 + 다오랩-프렌즈 부여 |
+| 비대상 초대코드     | 1 user    | 다른 초대코드로 입장  | 서버 입장                    | 다오콘 역할 부여되지 않음                                            |
+| 역할 없이 버튼 클릭 | 1 user    | 다오콘 역할 없음      | 버튼 클릭                    | ephemeral 거부 메시지                                                |
+| I-01 검증           | 1 user    | 다오콘 역할 보유      | 모달 제출 완료               | 다오콘 없음 AND 다오랩-프렌즈 있음                                   |
+| I-03 검증           | 봇 재시작 | 기존 버튼 메시지 존재 | 봇 재시작                    | 새 버튼 메시지 생성 안 함                                            |
+| 최소 글자수         | 1 user    | 다오콘 역할 보유      | 자기소개 49자 입력           | 모달 제출 불가 (Discord 클라이언트 자체 검증)                        |
 
 ## 6. Open Questions
 

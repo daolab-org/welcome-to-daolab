@@ -2,7 +2,7 @@
 
 특정 Discord 초대코드로 입장한 사용자의 온보딩을 자동화하는 봇.
 
-초대코드 입장 → `다오콘` 역할 부여 → 버튼 클릭 → 4문항 모달 작성 → `다오랩-프렌즈` 역할 부여 + 아카이빙.
+초대코드 입장 → `다오콘` 역할 부여 → 버튼 클릭 → 5문항 모달 작성 → 닉네임 변경 + `다오랩-프렌즈` 역할 부여 + 아카이빙.
 
 ## 사전 준비
 
@@ -16,7 +16,7 @@
    - **Server Members Intent** (필수 - guildMemberAdd 이벤트 수신)
 6. 좌측 메뉴에서 **OAuth2** → **URL Generator** 클릭
 7. Scopes: `bot` 선택
-8. Bot Permissions: `Manage Roles`, `Send Messages`, `Read Message History` 선택
+8. Bot Permissions: `Manage Roles`, `Manage Nicknames`, `Send Messages`, `Read Message History` 선택
 9. 생성된 URL로 봇을 서버에 초대
 
 ### 2. Discord 서버 설정
@@ -74,9 +74,10 @@ npm start
 1. 사용자가 `TARGET_INVITE_CODE`로 서버에 입장
 2. 봇이 자동으로 `다오콘` 역할 부여
 3. 환영 채널의 **온보딩 시작하기** 버튼 클릭
-4. 4문항 모달 표시 (이름, 자기소개, 경험, 기대사항)
+4. 5문항 모달 표시 (실명, 닉네임, 자기소개, 경험, 기대사항)
 5. 제출하면 아카이브 채널에 Embed로 저장
-6. `다오콘` 제거 + `다오랩-프렌즈` 부여
+6. 닉네임으로 서버 표시 이름 변경
+7. `다오콘` 제거 + `다오랩-프렌즈` 부여
 
 ## 개발
 
