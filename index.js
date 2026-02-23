@@ -115,18 +115,28 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return;
     }
 
-    const modal = new ModalBuilder().setCustomId('onboarding_modal').setTitle('다오랩 프렌즈 소개');
+    const modal = new ModalBuilder()
+      .setCustomId('onboarding_modal')
+      .setTitle('다오랩 프렌즈 합류를 환영합니다');
 
-    const q1 = new TextInputBuilder()
-      .setCustomId('q1_name')
-      .setLabel('이름 / 닉네임')
+    const q1Name = new TextInputBuilder()
+      .setCustomId('q1_realname')
+      .setLabel('실명 이름을 말씀해 주세요.')
       .setStyle(TextInputStyle.Short)
       .setRequired(true)
       .setMaxLength(50);
 
+    const q1Nickname = new TextInputBuilder()
+      .setCustomId('q1_nickname')
+      .setLabel('닉네임을 말씀해 주세요.')
+      .setPlaceholder('서버에서 사용할 닉네임')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true)
+      .setMaxLength(32);
+
     const q2 = new TextInputBuilder()
       .setCustomId('q2_intro')
-      .setLabel('자기소개 (최소 50자)')
+      .setLabel('자기 소개를 해 주세요. (최소 3-4줄)')
       .setStyle(TextInputStyle.Paragraph)
       .setRequired(true)
       .setMinLength(50)
@@ -134,20 +144,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     const q3 = new TextInputBuilder()
       .setCustomId('q3_experience')
-      .setLabel('관련 경험')
+      .setLabel('커뮤니티나 DAO, 조직 운영 경험에 대해 얘기해 주세요.')
       .setStyle(TextInputStyle.Paragraph)
       .setRequired(true)
       .setMaxLength(1000);
 
     const q4 = new TextInputBuilder()
       .setCustomId('q4_expectation')
-      .setLabel('기대사항')
+      .setLabel('다오랩에서 기대하는 바를 알려주세요.')
       .setStyle(TextInputStyle.Paragraph)
       .setRequired(true)
       .setMaxLength(1000);
 
     modal.addComponents(
-      new ActionRowBuilder().addComponents(q1),
+      new ActionRowBuilder().addComponents(q1Name),
+      new ActionRowBuilder().addComponents(q1Nickname),
       new ActionRowBuilder().addComponents(q2),
       new ActionRowBuilder().addComponents(q3),
       new ActionRowBuilder().addComponents(q4),
@@ -161,7 +172,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.isModalSubmit() && interaction.customId === 'onboarding_modal') {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    const name = interaction.fields.getTextInputValue('q1_name');
+    const realname = interaction.fields.getTextInputValue('q1_realname');
+    const nickname = interaction.fields.getTextInputValue('q1_nickname');
     const intro = interaction.fields.getTextInputValue('q2_intro');
     const experience = interaction.fields.getTextInputValue('q3_experience');
     const expectation = interaction.fields.getTextInputValue('q4_expectation');
@@ -178,21 +190,25 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       const embed = new EmbedBuilder()
         .setColor(0x5865f2)
-        .setTitle(`${name}님의 자기소개`)
+        .setTitle(`${nickname}님의 자기소개`)
         .setThumbnail(interaction.user.displayAvatarURL())
         .addFields(
-          { name: '이름/닉네임', value: name },
+          { name: '실명', value: realname },
+          { name: '닉네임', value: nickname },
           { name: '자기소개', value: intro },
-          { name: '관련 경험', value: experience },
-          { name: '기대사항', value: expectation },
+          { name: '커뮤니티/DAO/조직 운영 경험', value: experience },
+          { name: '다오랩에서 기대하는 바', value: expectation },
         )
         .setFooter({ text: `ID: ${interaction.user.id}` })
         .setTimestamp();
 
       await archiveChannel.send({ embeds: [embed] });
 
-      // T-06 / I-01: remove 다오콘, then add 다오랩-프렌즈
+      // T-06 / I-01: remove 다오콘, then add 다오랩-프렌즈 + set nickname
       const member = interaction.member;
+      await member.setNickname(nickname).catch((err) => {
+        console.error(`Failed to set nickname for ${interaction.user.tag}:`, err);
+      });
       await member.roles.remove(DAOCON_ROLE_ID);
       await member.roles.add(DAOFRIENDS_ROLE_ID);
 
