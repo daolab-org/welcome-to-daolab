@@ -11,6 +11,7 @@ const {
   TextInputStyle,
   EmbedBuilder,
   MessageFlags,
+  Events,
 } = require('discord.js');
 
 const GUILD_ID = process.env.GUILD_ID;
@@ -31,10 +32,10 @@ const client = new Client({
 // T-01: invite cache for tracking which invite code was used
 const inviteCache = new Map();
 
-client.once('ready', async () => {
+client.once(Events.ClientReady, async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
-  const guild = client.guilds.cache.get(GUILD_ID);
+  const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
   if (!guild) {
     console.error(`Guild ${GUILD_ID} not found`);
     return;
@@ -48,7 +49,7 @@ client.once('ready', async () => {
   console.log(`Cached ${inviteCache.size} invites`);
 
   // T-07 / I-03: ensure exactly one welcome button message exists
-  const welcomeChannel = guild.channels.cache.get(WELCOME_CHANNEL_ID);
+  const welcomeChannel = await guild.channels.fetch(WELCOME_CHANNEL_ID).catch(() => null);
   if (!welcomeChannel) {
     console.error(`Welcome channel ${WELCOME_CHANNEL_ID} not found`);
     return;
@@ -79,7 +80,7 @@ client.once('ready', async () => {
 });
 
 // T-02, T-03: detect invite code and assign 다오콘 role
-client.on('guildMemberAdd', async (member) => {
+client.on(Events.GuildMemberAdd, async (member) => {
   if (member.guild.id !== GUILD_ID) return;
 
   try {
@@ -102,7 +103,7 @@ client.on('guildMemberAdd', async (member) => {
   }
 });
 
-client.on('interactionCreate', async (interaction) => {
+client.on(Events.InteractionCreate, async (interaction) => {
   // T-04: button click → show modal (no defer, A-02)
   if (interaction.isButton() && interaction.customId === 'start_onboarding') {
     const member = interaction.member;
@@ -167,7 +168,9 @@ client.on('interactionCreate', async (interaction) => {
 
     try {
       // T-05: archive embed
-      const archiveChannel = interaction.guild.channels.cache.get(ARCHIVE_CHANNEL_ID);
+      const archiveChannel = await interaction.guild.channels
+        .fetch(ARCHIVE_CHANNEL_ID)
+        .catch(() => null);
       if (!archiveChannel) {
         await interaction.editReply('아카이브 채널을 찾을 수 없습니다. 관리자에게 문의해주세요.');
         return;
