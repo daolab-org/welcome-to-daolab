@@ -98,15 +98,23 @@ client.on(Events.GuildMemberAdd, async (member) => {
       await member.roles.add(DAOCON_ROLE_ID);
       console.log(`Assigned 다오콘 role to ${member.user.tag} (invite: ${usedInvite.code})`);
 
-      // DM으로 온보딩 안내 (환영 채널 버튼 유도)
-      await member
-        .send(
-          `${member}님, **다오랩 프렌즈**에 오신 것을 환영합니다! 🎉\n\n` +
-            `온보딩을 완료하려면 <#${WELCOME_CHANNEL_ID}> 채널에서 **온보딩 시작하기** 버튼을 클릭해주세요.`,
-        )
-        .catch((err) => {
-          console.error(`Failed to send DM to ${member.user.tag}:`, err);
-        });
+      // DM으로 온보딩 안내, 실패 시 환영 채널 멘션으로 fallback
+      const onboardingMessage =
+        `${member}님, **다오랩 프렌즈**에 오신 것을 환영합니다! 🎉\n\n` +
+        `온보딩을 완료하려면 <#${WELCOME_CHANNEL_ID}> 채널에서 **온보딩 시작하기** 버튼을 클릭해주세요.`;
+
+      const dmSent = await member.send(onboardingMessage).catch(() => null);
+
+      if (!dmSent) {
+        const welcomeChannel = await member.guild.channels
+          .fetch(WELCOME_CHANNEL_ID)
+          .catch(() => null);
+        if (welcomeChannel) {
+          await welcomeChannel.send(onboardingMessage).catch((err) => {
+            console.error(`Failed to send welcome fallback for ${member.user.tag}:`, err);
+          });
+        }
+      }
     }
   } catch (error) {
     console.error(`Failed to process member join for ${member.user.tag}:`, error);
