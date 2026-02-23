@@ -16,7 +16,7 @@
    - **Server Members Intent** (필수 - guildMemberAdd 이벤트 수신)
 6. 좌측 메뉴에서 **OAuth2** → **URL Generator** 클릭
 7. Scopes: `bot` 선택
-8. Bot Permissions: `Manage Roles`, `Manage Nicknames`, `Send Messages`, `Read Message History` 선택
+8. Bot Permissions: `Manage Roles`, `Manage Nicknames`, `Manage Messages`, `Send Messages`, `Read Message History` 선택
 9. 생성된 URL로 봇을 서버에 초대
 
 ### 2. Discord 서버 설정
@@ -73,17 +73,50 @@ npm start
 
 1. 사용자가 `TARGET_INVITE_CODE`로 서버에 입장
 2. 봇이 자동으로 `다오콘` 역할 부여
-3. 환영 채널의 **온보딩 시작하기** 버튼 클릭
-4. 5문항 모달 표시 (실명, 닉네임, 자기소개, 경험, 기대사항)
-5. 제출하면 아카이브 채널에 Embed로 저장
-6. 닉네임으로 서버 표시 이름 변경
-7. `다오콘` 제거 + `다오랩-프렌즈` 부여
+3. DM(버튼 직접 링크) + 환영 채널 멘션으로 온보딩 안내
+4. 환영 채널의 **온보딩 시작하기** 버튼 클릭 (핀 고정 메시지)
+5. 5문항 모달 표시 (실명, 닉네임, 자기소개, 경험, 기대사항)
+6. 제출하면 아카이브 채널에 사용자 멘션 + Embed로 저장
+7. 닉네임으로 서버 표시 이름 변경
+8. `다오콘` 제거 + `다오랩-프렌즈` 부여
 
 ## 개발
 
 ```bash
+npm test              # Jest 테스트
 npm run lint          # ESLint 검사
 npm run lint:fix      # ESLint 자동 수정
 npm run format        # Prettier 포맷팅
 npm run format:check  # Prettier 검사
 ```
+
+## 로그
+
+구조화 전보체 형식: `[PHASE] ACTION | key=value`
+
+| Phase    | 설명               |
+| -------- | ------------------ |
+| `INIT`   | 봇 시작 및 초기화  |
+| `JOIN`   | 멤버 입장 처리     |
+| `INVITE` | 초대코드 캐시 비교 |
+| `NOTIFY` | DM/채널 알림 발송  |
+| `BUTTON` | 버튼 클릭 처리     |
+| `MODAL`  | 모달 제출 처리     |
+| `ROLE`   | 역할 변경          |
+
+`WARN` 로그 모니터링 대상:
+
+- `[INVITE] WARN multiple invite changes` — 동시 입장 경합 (A-05), 수동 역할 부여 필요
+- `[JOIN] WARN invite undetected` — 초대코드 감지 실패
+- `[NOTIFY] WARN DM blocked` — 사용자 DM 차단
+- `[ROLE] WARN nickname set failed` — 닉네임 변경 실패 (서버 소유자 등)
+
+## 필요 권한
+
+| 권한                 | 용도                             |
+| -------------------- | -------------------------------- |
+| Manage Roles         | 다오콘/다오랩-프렌즈 역할 부여   |
+| Manage Nicknames     | 온보딩 닉네임으로 서버 이름 변경 |
+| Manage Messages      | 환영 채널 버튼 메시지 핀 고정    |
+| Send Messages        | 환영 채널, 아카이브 채널 메시지  |
+| Read Message History | 기존 버튼 메시지 검색            |
