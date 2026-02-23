@@ -31,6 +31,7 @@ const client = new Client({
 
 // T-01: invite cache for tracking which invite code was used
 const inviteCache = new Map();
+let welcomeMessageUrl = null;
 
 client.once(Events.ClientReady, async () => {
   console.log(`Logged in as ${client.user.tag}`);
@@ -76,8 +77,10 @@ client.once(Events.ClientReady, async () => {
     await buttonMsg.pin().catch((err) => {
       console.error('Failed to pin welcome message:', err);
     });
+    welcomeMessageUrl = buttonMsg.url;
     console.log('Welcome button message created and pinned');
   } else {
+    welcomeMessageUrl = existingButton.url;
     // 기존 메시지가 핀되어 있지 않으면 핀
     if (!existingButton.pinned) {
       await existingButton.pin().catch((err) => {
@@ -110,11 +113,15 @@ client.on(Events.GuildMemberAdd, async (member) => {
       console.log(`Assigned 다오콘 role to ${member.user.tag} (invite: ${usedInvite.code})`);
 
       // DM + 환영 채널 둘 다 온보딩 안내
-      const onboardingMessage =
+      const dmMessage =
+        `${member}님, **다오랩 프렌즈**에 오신 것을 환영합니다! 🎉\n\n` +
+        `온보딩을 완료하려면 아래 링크를 클릭해서 **온보딩 시작하기** 버튼을 눌러주세요.\n` +
+        welcomeMessageUrl;
+      const channelMessage =
         `${member}님, **다오랩 프렌즈**에 오신 것을 환영합니다! 🎉\n\n` +
         `온보딩을 완료하려면 <#${WELCOME_CHANNEL_ID}> 채널에서 **온보딩 시작하기** 버튼을 클릭해주세요.`;
 
-      await member.send(onboardingMessage).catch((err) => {
+      await member.send(dmMessage).catch((err) => {
         console.error(`Failed to send DM to ${member.user.tag}:`, err);
       });
 
@@ -122,7 +129,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
         .fetch(WELCOME_CHANNEL_ID)
         .catch(() => null);
       if (welcomeChannel) {
-        await welcomeChannel.send(onboardingMessage).catch((err) => {
+        await welcomeChannel.send(channelMessage).catch((err) => {
           console.error(`Failed to send welcome message for ${member.user.tag}:`, err);
         });
       }
