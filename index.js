@@ -286,3 +286,11 @@ async function completeOnboarding(member, nickname) {
 }
 
 client.login(DISCORD_TOKEN);
+
+module.exports = {
+  detectUsedInvite,
+  completeOnboarding,
+  inviteCache,
+  BUTTON_ID,
+  MODAL_ID,
+};
