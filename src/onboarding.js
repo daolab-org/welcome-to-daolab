@@ -15,24 +15,88 @@ const {
   FIELD_IDS,
 } = require('./config');
 
+function isAlreadyAcknowledgedError(error) {
+  const message = (error?.message ?? '').toLowerCase();
+  return (
+    error?.code === 40060 ||
+    error?.code === 'InteractionAlreadyReplied' ||
+    message.includes('already been acknowledged') ||
+    message.includes('already been sent') ||
+    message.includes('already been replied') ||
+    message.includes('already been deferred')
+  );
+}
+
+async function replyEphemeralSafe(interaction, content, phase) {
+  const payload = { content, flags: MessageFlags.Ephemeral };
+  const tag = interaction.user.tag;
+
+  try {
+    if (interaction.deferred || interaction.replied) {
+      return await interaction.followUp(payload);
+    }
+    return await interaction.reply(payload);
+  } catch (error) {
+    if (isAlreadyAcknowledgedError(error)) {
+      log.warn(phase, `interaction already acknowledged — skip reply | user=${tag}`);
+      return null;
+    }
+    throw error;
+  }
+}
+
+async function deferEphemeralSafe(interaction, phase) {
+  const tag = interaction.user.tag;
+
+  if (interaction.deferred || interaction.replied) return true;
+
+  try {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    return true;
+  } catch (error) {
+    if (isAlreadyAcknowledgedError(error)) {
+      log.warn(phase, `interaction already acknowledged — skip defer | user=${tag}`);
+      return false;
+    }
+    throw error;
+  }
+}
+
+async function editReplySafe(interaction, content, phase) {
+  const tag = interaction.user.tag;
+
+  try {
+    if (interaction.deferred || interaction.replied) {
+      await interaction.editReply(content);
+      return true;
+    }
+    await replyEphemeralSafe(interaction, content, phase);
+    return true;
+  } catch (error) {
+    if (isAlreadyAcknowledgedError(error)) {
+      log.warn(phase, `interaction already acknowledged — skip editReply | user=${tag}`);
+      return false;
+    }
+    throw error;
+  }
+}
+
 async function handleButtonClick(interaction) {
   const { member } = interaction;
   const tag = interaction.user.tag;
 
   if (member.roles.cache.has(DAOFRIENDS_ROLE_ID)) {
     log.info('BUTTON', `already onboarded — reject | user=${tag}`);
-    return interaction.reply({
-      content: '이미 온보딩을 완료하셨습니다.',
-      flags: MessageFlags.Ephemeral,
-    });
+    return replyEphemeralSafe(interaction, '이미 온보딩을 완료하셨습니다.', 'BUTTON');
   }
 
   if (!member.roles.cache.has(DAOCON_ROLE_ID)) {
     log.warn('BUTTON', `no 다오콘 role — reject | user=${tag}`);
-    return interaction.reply({
-      content: '온보딩 대상이 아닙니다. 다오콘 역할이 필요합니다.',
-      flags: MessageFlags.Ephemeral,
-    });
+    return replyEphemeralSafe(
+      interaction,
+      '온보딩 대상이 아닙니다. 다오콘 역할이 필요합니다.',
+      'BUTTON',
+    );
   }
 
   const modal = new ModalBuilder()
@@ -84,38 +148,60 @@ async function handleButtonClick(interaction) {
     ),
   );
 
-  await interaction.showModal(modal);
-  log.info('BUTTON', `modal shown | user=${tag}`);
+  if (interaction.deferred || interaction.replied) {
+    log.warn('BUTTON', `interaction already acknowledged before modal | user=${tag}`);
+    return;
+  }
+
+  try {
+    await interaction.showModal(modal);
+    log.info('BUTTON', `modal shown | user=${tag}`);
+  } catch (error) {
+    if (isAlreadyAcknowledgedError(error)) {
+      log.warn('BUTTON', `interaction already acknowledged — skip modal | user=${tag}`);
+      return;
+    }
+    throw error;
+  }
 }
 
 async function handleModalSubmit(interaction) {
   const tag = interaction.user.tag;
   const uid = interaction.user.id;
 
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  const canProceed = await deferEphemeralSafe(interaction, 'MODAL');
+  if (!canProceed) return;
+
   log.info('MODAL', `submit received | user=${tag} uid=${uid}`);
 
-  const member = await interaction.guild.members.fetch(uid);
-
-  const fields = {
-    realname: interaction.fields.getTextInputValue(FIELD_IDS.REALNAME),
-    nickname: interaction.fields.getTextInputValue(FIELD_IDS.NICKNAME),
-    intro: interaction.fields.getTextInputValue(FIELD_IDS.INTRO),
-    experience: interaction.fields.getTextInputValue(FIELD_IDS.EXPERIENCE),
-    expectation: interaction.fields.getTextInputValue(FIELD_IDS.EXPECTATION),
-  };
-
   try {
+    const member = await interaction.guild.members.fetch(uid);
+    const fields = {
+      realname: interaction.fields.getTextInputValue(FIELD_IDS.REALNAME),
+      nickname: interaction.fields.getTextInputValue(FIELD_IDS.NICKNAME),
+      intro: interaction.fields.getTextInputValue(FIELD_IDS.INTRO),
+      experience: interaction.fields.getTextInputValue(FIELD_IDS.EXPERIENCE),
+      expectation: interaction.fields.getTextInputValue(FIELD_IDS.EXPECTATION),
+    };
+
     await archiveIntroduction(interaction, fields);
     log.info('MODAL', `archived | user=${tag} nickname=${fields.nickname}`);
 
     await completeOnboarding(member, fields.nickname);
     log.info('MODAL', `onboarding complete | user=${tag} nickname=${fields.nickname}`);
 
-    await interaction.editReply('✅ 온보딩이 완료되었습니다! 다오랩-프렌즈 역할이 부여되었습니다.');
+    await editReplySafe(
+      interaction,
+      '✅ 온보딩이 완료되었습니다! 다오랩-프렌즈 역할이 부여되었습니다.',
+      'MODAL',
+    );
   } catch (error) {
     log.error('MODAL', `onboarding failed | user=${tag}`, error);
-    await interaction.editReply('온보딩 처리 중 오류가 발생했습니다. 관리자에게 문의해주세요.');
+    await editReplySafe(
+      interaction,
+      '온보딩 처리 중 오류가 발생했습니다. 관리자에게 문의해주세요.',
+      'MODAL',
+    );
   }
 }
 
