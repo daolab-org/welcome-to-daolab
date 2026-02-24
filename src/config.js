@@ -28,4 +28,11 @@ module.exports = {
   FRIENDS_ONBOARD_CHANNEL_ID: process.env.FRIENDS_ONBOARD_CHANNEL_ID,
   BUTTON_ID: 'start_onboarding',
   MODAL_ID: 'onboarding_modal',
+  FIELD_IDS: {
+    REALNAME: 'q1_realname',
+    NICKNAME: 'q1_nickname',
+    INTRO: 'q2_intro',
+    EXPERIENCE: 'q3_experience',
+    EXPECTATION: 'q4_expectation',
+  },
 };

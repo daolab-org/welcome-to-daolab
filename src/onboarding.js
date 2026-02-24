@@ -7,7 +7,13 @@ const {
   MessageFlags,
 } = require('discord.js');
 const log = require('./logger');
-const { DAOCON_ROLE_ID, DAOFRIENDS_ROLE_ID, ARCHIVE_CHANNEL_ID, MODAL_ID } = require('./config');
+const {
+  DAOCON_ROLE_ID,
+  DAOFRIENDS_ROLE_ID,
+  ARCHIVE_CHANNEL_ID,
+  MODAL_ID,
+  FIELD_IDS,
+} = require('./config');
 
 async function handleButtonClick(interaction) {
   const { member } = interaction;
@@ -36,7 +42,7 @@ async function handleButtonClick(interaction) {
   modal.addComponents(
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('q1_realname')
+        .setCustomId(FIELD_IDS.REALNAME)
         .setLabel('실명 이름을 말씀해 주세요.')
         .setStyle(TextInputStyle.Short)
         .setRequired(true)
@@ -44,7 +50,7 @@ async function handleButtonClick(interaction) {
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('q1_nickname')
+        .setCustomId(FIELD_IDS.NICKNAME)
         .setLabel('닉네임을 말씀해 주세요.')
         .setPlaceholder('서버에서 사용할 닉네임')
         .setStyle(TextInputStyle.Short)
@@ -53,7 +59,7 @@ async function handleButtonClick(interaction) {
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('q2_intro')
+        .setCustomId(FIELD_IDS.INTRO)
         .setLabel('자기 소개를 해 주세요. (최소 3-4줄)')
         .setStyle(TextInputStyle.Paragraph)
         .setRequired(true)
@@ -62,7 +68,7 @@ async function handleButtonClick(interaction) {
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('q3_experience')
+        .setCustomId(FIELD_IDS.EXPERIENCE)
         .setLabel('커뮤니티나 DAO, 조직 운영 경험에 대해 얘기해 주세요.')
         .setStyle(TextInputStyle.Paragraph)
         .setRequired(true)
@@ -70,7 +76,7 @@ async function handleButtonClick(interaction) {
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('q4_expectation')
+        .setCustomId(FIELD_IDS.EXPECTATION)
         .setLabel('다오랩에서 기대하는 바를 알려주세요.')
         .setStyle(TextInputStyle.Paragraph)
         .setRequired(true)
@@ -90,11 +96,11 @@ async function handleModalSubmit(interaction) {
   log.info('MODAL', `submit received | user=${tag} uid=${uid}`);
 
   const fields = {
-    realname: interaction.fields.getTextInputValue('q1_realname'),
-    nickname: interaction.fields.getTextInputValue('q1_nickname'),
-    intro: interaction.fields.getTextInputValue('q2_intro'),
-    experience: interaction.fields.getTextInputValue('q3_experience'),
-    expectation: interaction.fields.getTextInputValue('q4_expectation'),
+    realname: interaction.fields.getTextInputValue(FIELD_IDS.REALNAME),
+    nickname: interaction.fields.getTextInputValue(FIELD_IDS.NICKNAME),
+    intro: interaction.fields.getTextInputValue(FIELD_IDS.INTRO),
+    experience: interaction.fields.getTextInputValue(FIELD_IDS.EXPERIENCE),
+    expectation: interaction.fields.getTextInputValue(FIELD_IDS.EXPECTATION),
   };
 
   try {
