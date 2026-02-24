@@ -4,7 +4,7 @@ const { Client, GatewayIntentBits, Events } = require('discord.js');
 const log = require('./src/logger');
 const config = require('./src/config');
 const { cacheInvites, detectUsedInvite } = require('./src/invite');
-const { ensureWelcomeMessage } = require('./src/welcome');
+const { ensureOnboardMessage } = require('./src/onboard');
 const { notifyNewMember } = require('./src/notify');
 const { handleButtonClick, handleModalSubmit } = require('./src/onboarding');
 
@@ -22,7 +22,7 @@ client.once(Events.ClientReady, async () => {
   try {
     const guild = await client.guilds.fetch(config.GUILD_ID);
     await cacheInvites(guild);
-    await ensureWelcomeMessage(guild, client.user.id);
+    await ensureOnboardMessage(guild, client.user.id);
     log.info('INIT', 'startup complete');
   } catch (error) {
     log.error('INIT', 'startup failed', error);

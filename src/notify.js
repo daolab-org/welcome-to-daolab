@@ -1,15 +1,15 @@
 const log = require('./logger');
 const { WELCOME_CHANNEL_ID, FRIENDS_ONBOARD_CHANNEL_ID } = require('./config');
-const { getWelcomeMessageUrl } = require('./welcome');
+const { getOnboardMessageUrl } = require('./onboard');
 
 async function notifyNewMember(member) {
   const tag = member.user.tag;
-  const welcomeMessageUrl = getWelcomeMessageUrl();
+  const onboardMessageUrl = getOnboardMessageUrl();
 
   const dmMessage =
     `${member}님, **다오랩 프렌즈**에 오신 것을 환영합니다! 🎉\n\n` +
     `온보딩을 완료하려면 아래 링크를 클릭해서 **온보딩 시작하기** 버튼을 눌러주세요.\n` +
-    welcomeMessageUrl;
+    onboardMessageUrl;
 
   const dmSent = await member.send(dmMessage).catch(() => null);
   if (dmSent) return;

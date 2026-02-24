@@ -2,25 +2,25 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const log = require('./logger');
 const { FRIENDS_ONBOARD_CHANNEL_ID, BUTTON_ID } = require('./config');
 
-let welcomeMessageUrl = null;
+let onboardMessageUrl = null;
 
-function getWelcomeMessageUrl() {
-  return welcomeMessageUrl;
+function getOnboardMessageUrl() {
+  return onboardMessageUrl;
 }
 
-async function ensureWelcomeMessage(guild, botUserId) {
+async function ensureOnboardMessage(guild, botUserId) {
   const channel = await guild.channels.fetch(FRIENDS_ONBOARD_CHANNEL_ID);
 
   const messages = await channel.messages.fetch({ limit: 50 });
   const existing = messages.find((msg) => msg.author.id === botUserId && msg.components.length > 0);
 
   if (existing) {
-    welcomeMessageUrl = existing.url;
+    onboardMessageUrl = existing.url;
     if (!existing.pinned) {
       await existing.pin();
-      log.info('INIT', `welcome msg pinned | url=${welcomeMessageUrl}`);
+      log.info('INIT', `onboard msg pinned | url=${onboardMessageUrl}`);
     } else {
-      log.info('INIT', `welcome msg exists | url=${welcomeMessageUrl}`);
+      log.info('INIT', `onboard msg exists | url=${onboardMessageUrl}`);
     }
     return;
   }
@@ -37,9 +37,9 @@ async function ensureWelcomeMessage(guild, botUserId) {
       '**다오랩 프렌즈에 오신 것을 환영합니다!**\n\n아래 버튼을 클릭하여 자기소개를 작성해주세요.',
     components: [row],
   });
-  await msg.pin().catch((err) => log.error('INIT', 'welcome msg pin failed', err));
-  welcomeMessageUrl = msg.url;
-  log.info('INIT', `welcome msg created + pinned | url=${welcomeMessageUrl}`);
+  await msg.pin().catch((err) => log.error('INIT', 'onboard msg pin failed', err));
+  onboardMessageUrl = msg.url;
+  log.info('INIT', `onboard msg created + pinned | url=${onboardMessageUrl}`);
 }
 
-module.exports = { ensureWelcomeMessage, getWelcomeMessageUrl };
+module.exports = { ensureOnboardMessage, getOnboardMessageUrl };
