@@ -1,10 +1,10 @@
 /**
  * SPEC.md Verification Scenarios:
- * - 정상 온보딩: 초대코드 감지 → 역할 부여 → 아카이빙 → 역할 교체
- * - 비대상 초대코드: 다오콘 역할 부여되지 않음
- * - 역할 없이 버튼 클릭: ephemeral 거부 메시지
- * - I-01: 다오콘 제거 + 다오랩-프렌즈 부여 (동시 보유 불가)
- * - I-03: 온보딩 메시지 중복 생성 안 함
+ * - Happy path: invite detect → role assign → archive → role swap
+ * - Non-target invite: no role assigned
+ * - Button click without role: ephemeral rejection
+ * - I-01: remove 다오콘 + add 다오랩-프렌즈 (never held simultaneously)
+ * - I-03: no duplicate onboard message on restart
  */
 
 // --- discord.js mock (must be before require) ---
