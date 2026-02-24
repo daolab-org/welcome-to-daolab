@@ -16,7 +16,7 @@ const {
 } = require('./config');
 
 async function handleButtonClick(interaction) {
-  const member = await interaction.guild.members.fetch(interaction.user.id);
+  const { member } = interaction;
   const tag = interaction.user.tag;
 
   if (member.roles.cache.has(DAOFRIENDS_ROLE_ID)) {
