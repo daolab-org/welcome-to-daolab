@@ -23,7 +23,7 @@
 
 1. **역할 생성**: `다오콘`, `다오랩-프렌즈` 역할을 만든다
 2. **역할 순서**: 봇 역할이 `다오콘`, `다오랩-프렌즈`보다 **위에** 있어야 한다 (서버 설정 → 역할에서 드래그)
-3. **채널 준비**: 환영 채널, 온보딩 채널(읽기 전용, `다오콘` 역할에게만 표시), 아카이브 채널(`다오랩-프렌즈-소개`)을 만든다
+3. **채널 준비**: 웰컴 채널, 온보딩 채널(읽기 전용, `다오콘` 역할에게만 표시), 아카이브 채널(`다오랩-프렌즈-소개`)을 만든다
 4. **초대코드 생성**: 서버 설정 → 초대에서 추적할 초대 링크를 생성한다
 
 ### 3. ID 확인 방법
@@ -58,7 +58,7 @@ TARGET_INVITE_CODE=추적할_초대코드
 DAOCON_ROLE_ID=다오콘_역할_ID
 DAOFRIENDS_ROLE_ID=다오랩프렌즈_역할_ID
 ARCHIVE_CHANNEL_ID=아카이브_채널_ID
-WELCOME_CHANNEL_ID=환영_채널_ID
+WELCOME_CHANNEL_ID=웰컴_채널_ID
 FRIENDS_ONBOARD_CHANNEL_ID=온보딩_채널_ID
 ```
 
@@ -74,7 +74,7 @@ npm start
 
 1. 사용자가 `TARGET_INVITE_CODE`로 서버에 입장
 2. 봇이 자동으로 `다오콘` 역할 부여
-3. DM으로 온보딩 안내 (버튼 직접 링크 포함, DM 차단 시 환영 채널에 폴백)
+3. DM으로 온보딩 안내 (버튼 직접 링크 포함, DM 차단 시 웰컴 채널에 폴백)
 4. 온보딩 채널의 **온보딩 시작하기** 버튼 클릭 (핀 고정 메시지)
 5. 5문항 모달 표시 (실명, 닉네임, 자기소개, 경험, 기대사항)
 6. 제출하면 아카이브 채널에 사용자 멘션 + Embed로 저장
@@ -109,7 +109,7 @@ npm run format:check  # Prettier 검사
 
 - `[INVITE] WARN multiple invite changes` — 동시 입장 경합 (A-05), 수동 역할 부여 필요
 - `[JOIN] WARN invite undetected` — 초대코드 감지 실패
-- `[NOTIFY] WARN DM blocked` — 사용자 DM 차단, 환영 채널에 폴백 발송
+- `[NOTIFY] WARN DM blocked` — 사용자 DM 차단, 웰컴 채널에 폴백 발송
 - `[ROLE] WARN nickname set failed` — 닉네임 변경 실패 (서버 소유자 등)
 
 ## 필요 권한
@@ -119,5 +119,5 @@ npm run format:check  # Prettier 검사
 | Manage Roles         | 다오콘/다오랩-프렌즈 역할 부여   |
 | Manage Nicknames     | 온보딩 닉네임으로 서버 이름 변경 |
 | Manage Messages      | 온보딩 채널 버튼 메시지 핀 고정  |
-| Send Messages        | 온보딩·환영·아카이브 채널 메시지 |
+| Send Messages        | 온보딩·웰컴·아카이브 채널 메시지 |
 | Read Message History | 기존 버튼 메시지 검색            |

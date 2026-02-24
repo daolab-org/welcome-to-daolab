@@ -84,8 +84,8 @@ async function handleButtonClick(interaction) {
     ),
   );
 
+  await interaction.showModal(modal);
   log.info('BUTTON', `modal shown | user=${tag}`);
-  return interaction.showModal(modal);
 }
 
 async function handleModalSubmit(interaction) {

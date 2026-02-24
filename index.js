@@ -65,11 +65,15 @@ client.on(Events.GuildMemberAdd, async (member) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (interaction.isButton() && interaction.customId === config.BUTTON_ID) {
-    return handleButtonClick(interaction);
-  }
-  if (interaction.isModalSubmit() && interaction.customId === config.MODAL_ID) {
-    return handleModalSubmit(interaction);
+  try {
+    if (interaction.isButton() && interaction.customId === config.BUTTON_ID) {
+      return await handleButtonClick(interaction);
+    }
+    if (interaction.isModalSubmit() && interaction.customId === config.MODAL_ID) {
+      return await handleModalSubmit(interaction);
+    }
+  } catch (error) {
+    log.error('INTERACTION', `handler failed | user=${interaction.user.tag}`, error);
   }
 });
 
