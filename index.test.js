@@ -27,7 +27,7 @@ jest.mock('discord.js', () => {
   };
 });
 
-// --- env setup (must be before require('./index')) ---
+// --- env setup (must be before require) ---
 process.env.DISCORD_TOKEN = 'test-token';
 process.env.GUILD_ID = 'guild-123';
 process.env.TARGET_INVITE_CODE = 'target-code';
@@ -36,13 +36,12 @@ process.env.DAOFRIENDS_ROLE_ID = 'friends-role';
 process.env.ARCHIVE_CHANNEL_ID = 'archive-ch';
 process.env.WELCOME_CHANNEL_ID = 'welcome-ch';
 
-const {
-  detectUsedInvite,
-  completeOnboarding,
-  inviteCache,
-  BUTTON_ID,
-  MODAL_ID,
-} = require('./index');
+const { detectUsedInvite, inviteCache } = require('./src/invite');
+const { completeOnboarding } = require('./src/onboarding');
+const { BUTTON_ID, MODAL_ID } = require('./src/config');
+
+// load index.js to trigger client.login
+require('./index');
 
 // --- helpers ---
 
