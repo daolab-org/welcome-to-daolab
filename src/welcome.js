@@ -1,6 +1,6 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const log = require('./logger');
-const { WELCOME_CHANNEL_ID, BUTTON_ID } = require('./config');
+const { FRIENDS_ONBOARD_CHANNEL_ID, BUTTON_ID } = require('./config');
 
 let welcomeMessageUrl = null;
 
@@ -9,7 +9,7 @@ function getWelcomeMessageUrl() {
 }
 
 async function ensureWelcomeMessage(guild, botUserId) {
-  const channel = await guild.channels.fetch(WELCOME_CHANNEL_ID);
+  const channel = await guild.channels.fetch(FRIENDS_ONBOARD_CHANNEL_ID);
 
   const messages = await channel.messages.fetch({ limit: 50 });
   const existing = messages.find((msg) => msg.author.id === botUserId && msg.components.length > 0);

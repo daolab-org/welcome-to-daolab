@@ -35,6 +35,7 @@ process.env.DAOCON_ROLE_ID = 'daocon-role';
 process.env.DAOFRIENDS_ROLE_ID = 'friends-role';
 process.env.ARCHIVE_CHANNEL_ID = 'archive-ch';
 process.env.WELCOME_CHANNEL_ID = 'welcome-ch';
+process.env.FRIENDS_ONBOARD_CHANNEL_ID = 'onboard-ch';
 
 const { detectUsedInvite, inviteCache } = require('./src/invite');
 const { completeOnboarding } = require('./src/onboarding');
