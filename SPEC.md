@@ -110,7 +110,7 @@ Breadcrumb A-01 적용:
 L1: "guildMemberAdd 이벤트 발생 시, invites.fetch() 비교로 TARGET_INVITE_CODE 사용 여부를 판별한다"
 
 Breadcrumb A-02 적용:
-L2: "대상 사용자에게 다오콘 역할을 부여하고, 환영 채널의 고정 버튼을 클릭하면 모달이 표시된다"
+L2: "대상 사용자에게 다오콘 역할을 부여하고, 온보딩 채널의 고정 버튼을 클릭하면 모달이 표시된다"
 
 L3 (Machine Spec): "guildMemberAdd 시 초대코드 캐시와 비교하여 일치하면 member.roles.add(DAOCON_ROLE_ID) 호출. 온보딩 채널(`FRIENDS_ONBOARD_CHANNEL`)에 상시 버튼 메시지 존재. 버튼 interactionCreate 시 다오콘 역할 확인 후 interaction.showModal() 호출"
 
