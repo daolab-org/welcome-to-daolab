@@ -2,7 +2,7 @@
 
 Version: 0.1.0 | Status: Draft
 
-**Executive Summary**: 특정 Discord 초대코드로 입장한 사용자에게 자동으로 `다오콘` 역할을 부여하고, 서버 내 환영 채널의 고정 버튼을 통해 5문항 모달(실명, 닉네임, 자기소개, 경험, 기대사항)을 표시하여 온보딩을 완료한 사용자에게 `다오랩-프렌즈` 역할을 부여하고 닉네임으로 서버 표시 이름을 변경하는 봇을 명세한다.
+**Executive Summary**: 특정 Discord 초대코드로 입장한 사용자에게 자동으로 `다오콘` 역할을 부여하고, 전용 온보딩 채널(`FRIENDS_ONBOARD_CHANNEL`)의 고정 버튼을 통해 5문항 모달(실명, 닉네임, 자기소개, 경험, 기대사항)을 표시하여 온보딩을 완료한 사용자에게 `다오랩-프렌즈` 역할을 부여하고 닉네임으로 서버 표시 이름을 변경하는 봇을 명세한다.
 
 ## 1. Problem Frame
 
@@ -88,17 +88,17 @@ Version: 0.1.0 | Status: Draft
 
 ### 3.1 Business Requirements (Optative)
 
-| ID   | Requirement                                                          | Priority |
-| ---- | -------------------------------------------------------------------- | -------- |
-| R-01 | 특정 초대코드로 입장한 사용자는 자동으로 온보딩 절차를 밟아야 한다   | Must     |
-| R-02 | 사용자는 5문항(실명, 닉네임, 자기소개, 경험, 기대사항)에 답해야 한다 | Must     |
-| R-03 | 답변은 `다오랩-프렌즈-소개` 채널에 아카이빙되어야 한다               | Must     |
-| R-04 | 온보딩 완료 시 `다오랩-프렌즈` 역할이 부여되어야 한다                | Must     |
-| R-05 | 온보딩 과정이 다른 사용자에게 도배되지 않아야 한다                   | Should   |
-| R-06 | 온보딩 완료 시 닉네임으로 서버 표시 이름이 변경되어야 한다           | Should   |
-| R-07 | 입장 시 DM + 환영 채널 멘션으로 온보딩 안내를 받아야 한다            | Must     |
-| R-08 | 이미 온보딩 완료한 사용자는 재온보딩할 수 없어야 한다                | Should   |
-| R-09 | 필수 환경변수 누락 시 봇이 즉시 종료되어야 한다                      | Must     |
+| ID   | Requirement                                                           | Priority |
+| ---- | --------------------------------------------------------------------- | -------- |
+| R-01 | 특정 초대코드로 입장한 사용자는 자동으로 온보딩 절차를 밟아야 한다    | Must     |
+| R-02 | 사용자는 5문항(실명, 닉네임, 자기소개, 경험, 기대사항)에 답해야 한다  | Must     |
+| R-03 | 답변은 `다오랩-프렌즈-소개` 채널에 아카이빙되어야 한다                | Must     |
+| R-04 | 온보딩 완료 시 `다오랩-프렌즈` 역할이 부여되어야 한다                 | Must     |
+| R-05 | 온보딩 과정이 다른 사용자에게 도배되지 않아야 한다                    | Must     |
+| R-06 | 온보딩 완료 시 닉네임으로 서버 표시 이름이 변경되어야 한다            | Should   |
+| R-07 | 입장 시 DM으로 온보딩 안내를 받아야 한다. DM 차단 시 환영 채널에 폴백 | Must     |
+| R-08 | 이미 온보딩 완료한 사용자는 재온보딩할 수 없어야 한다                 | Should   |
+| R-09 | 필수 환경변수 누락 시 봇이 즉시 종료되어야 한다                       | Must     |
 
 ### 3.2 Requirement Progression
 
@@ -110,18 +110,18 @@ Breadcrumb A-01 적용:
 L1: "guildMemberAdd 이벤트 발생 시, invites.fetch() 비교로 TARGET_INVITE_CODE 사용 여부를 판별한다"
 
 Breadcrumb A-02 적용:
-L2: "대상 사용자에게 다오콘 역할을 부여하고, 환영 채널의 고정 버튼을 클릭하면 모달이 표시된다"
+L2: "대상 사용자에게 다오콘 역할을 부여하고, 온보딩 채널의 고정 버튼을 클릭하면 모달이 표시된다"
 
-L3 (Machine Spec): "guildMemberAdd 시 초대코드 캐시와 비교하여 일치하면 member.roles.add(DAOCON_ROLE_ID) 호출. 환영 채널에 상시 버튼 메시지 존재. 버튼 interactionCreate 시 다오콘 역할 확인 후 interaction.showModal() 호출"
+L3 (Machine Spec): "guildMemberAdd 시 초대코드 캐시와 비교하여 일치하면 member.roles.add(DAOCON_ROLE_ID) 호출. 온보딩 채널(`FRIENDS_ONBOARD_CHANNEL`)에 상시 버튼 메시지 존재. 버튼 interactionCreate 시 다오콘 역할 확인 후 interaction.showModal() 호출"
 
 **R-05 Progression:**
 
 L0 (Business): "온보딩 과정이 다른 사용자에게 도배되지 않아야 한다"
 
 Breadcrumb A-02, A-03 적용:
-L1: "입장 시마다 메시지를 보내지 않고, 고정 버튼 1개만 존재. 모달 응답은 ephemeral"
+L1: "입장 시마다 메시지를 보내지 않고, 전용 읽기 전용 온보딩 채널에 고정 버튼 1개만 존재. 모달 응답은 ephemeral"
 
-L2 (Machine Spec): "봇 시작 시 환영 채널에 버튼 메시지 1회 생성 (기존 존재 시 재사용). 모달 제출 응답은 interaction.deferReply({ flags: MessageFlags.Ephemeral })"
+L2 (Machine Spec): "봇 시작 시 온보딩 채널(`FRIENDS_ONBOARD_CHANNEL`)에 버튼 메시지 1회 생성 (기존 존재 시 재사용). 모달 제출 응답은 interaction.deferReply({ flags: MessageFlags.Ephemeral }). 환영 채널은 DM 차단 시 폴백 알림 전용"
 
 ### 3.3 Technical Requirements (Derived)
 
@@ -133,11 +133,11 @@ L2 (Machine Spec): "봇 시작 시 환영 채널에 버튼 메시지 1회 생성
 | T-04 | R-02 | 버튼 클릭 시 5개 TextInput 포함 모달 표시 (실명, 닉네임, 자기소개 minLength:50, 경험, 기대사항) |
 | T-05 | R-03 | 모달 제출 시 ARCHIVE_CHANNEL_ID에 Embed 전송                                                    |
 | T-06 | R-04 | 아카이빙 성공 후 다오콘 제거 + 다오랩-프렌즈 부여                                               |
-| T-07 | R-05 | 환영 채널에 고정(pin) 버튼 메시지 1개 유지. 응답은 ephemeral                                    |
+| T-07 | R-05 | 온보딩 채널(`FRIENDS_ONBOARD_CHANNEL`)에 고정(pin) 버튼 메시지 1개 유지. 응답은 ephemeral       |
 | T-08 | R-06 | 모달 제출 시 member.setNickname(닉네임) 호출. 실패 시 로깅 후 계속 진행                         |
-| T-09 | R-07 | 대상 초대코드 입장 시 DM(버튼 메시지 직접 링크 포함) + 환영 채널 멘션 동시 발송                 |
+| T-09 | R-07 | 대상 초대코드 입장 시 DM(온보딩 채널 버튼 메시지 직접 링크) 발송. DM 차단 시 환영 채널에 폴백   |
 | T-10 | R-08 | 버튼 클릭 시 다오랩-프렌즈 역할 보유 여부 확인. 보유 시 ephemeral 거부                          |
-| T-11 | R-09 | 봇 시작 시 7개 필수 환경변수 검증. 누락 시 process.exit(1)                                      |
+| T-11 | R-09 | 봇 시작 시 8개 필수 환경변수 검증. 누락 시 process.exit(1)                                      |
 | T-12 | R-03 | 아카이브 Embed 전송 시 사용자 멘션을 content에 포함하여 알림 발생                               |
 
 ## 4. Specification
@@ -161,7 +161,7 @@ Transitions:
 | ---- | ----------- | ------------------------------------------------------------------------------------------ | ------------------------------------------ |
 | I-01 | State       | 한 사용자는 다오콘과 다오랩-프렌즈를 동시에 가질 수 없다                                   | 역할 교체 시 remove → add 순서 보장        |
 | I-02 | Referential | 다오랩-프렌즈 역할 부여 시 반드시 아카이브 채널에 해당 사용자의 소개 Embed가 존재해야 한다 | 아카이빙 성공 후에만 역할 부여             |
-| I-03 | Uniqueness  | 환영 채널에 봇의 버튼 메시지는 최대 1개만 존재한다                                         | 봇 시작 시 기존 메시지 검색 후 재사용/생성 |
+| I-03 | Uniqueness  | 온보딩 채널에 봇의 버튼 메시지는 최대 1개만 존재한다                                       | 봇 시작 시 기존 메시지 검색 후 재사용/생성 |
 | I-04 | Validation  | 자기소개 필드는 최소 50자 이상이어야 한다                                                  | TextInputBuilder.setMinLength(50)          |
 
 ### 4.3 Event Contracts
@@ -169,9 +169,9 @@ Transitions:
 **guildMemberAdd Handler:**
 
 - Pre: member.guild.id === GUILD_ID
-- Action: invites.fetch() → 캐시 비교(A-05 경합 감지 로깅) → 대상이면 roles.add(DAOCON_ROLE_ID) → DM + 환영 채널 알림 발송(T-09)
-- Post: 대상 사용자에게 다오콘 역할 부여 + DM/채널 알림 발송
-- Error: `[JOIN] ERROR` 구조화 로깅. DM 차단 시 `[NOTIFY] WARN`
+- Action: invites.fetch() → 캐시 비교(A-05 경합 감지 로깅) → 대상이면 roles.add(DAOCON_ROLE_ID) → DM 발송 (차단 시 환영 채널 폴백)(T-09)
+- Post: 대상 사용자에게 다오콘 역할 부여 + DM 발송 (차단 시 환영 채널 폴백)
+- Error: `[JOIN] ERROR` 구조화 로깅. DM 차단 시 `[NOTIFY] WARN` + 환영 채널 폴백
 
 **Button Interaction (start_onboarding):**
 
@@ -205,7 +205,7 @@ Transitions:
 | I-03 검증           | 봇 재시작 | 기존 버튼 메시지 존재   | 봇 재시작                    | 새 버튼 메시지 생성 안 함. 핀 상태 유지                              |
 | 최소 글자수         | 1 user    | 다오콘 역할 보유        | 자기소개 49자 입력           | 모달 제출 불가 (Discord 클라이언트 자체 검증)                        |
 | 환경변수 누락       | 봇 시작   | GUILD_ID 미설정         | npm start                    | 에러 로그 출력 + process.exit(1)                                     |
-| DM 차단 사용자      | 1 user    | DM 수신 차단            | 대상 초대코드로 입장         | DM 실패 WARN 로깅 + 환영 채널 멘션은 정상 발송                       |
+| DM 차단 사용자      | 1 user    | DM 수신 차단            | 대상 초대코드로 입장         | DM 실패 WARN 로깅 + 환영 채널에 폴백 멘션 발송                       |
 
 ## 6. Open Questions
 
