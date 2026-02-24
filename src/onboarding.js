@@ -16,7 +16,7 @@ const {
 } = require('./config');
 
 async function handleButtonClick(interaction) {
-  const { member } = interaction;
+  const member = await interaction.guild.members.fetch(interaction.user.id);
   const tag = interaction.user.tag;
 
   if (member.roles.cache.has(DAOFRIENDS_ROLE_ID)) {
@@ -95,6 +95,8 @@ async function handleModalSubmit(interaction) {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
   log.info('MODAL', `submit received | user=${tag} uid=${uid}`);
 
+  const member = await interaction.guild.members.fetch(uid);
+
   const fields = {
     realname: interaction.fields.getTextInputValue(FIELD_IDS.REALNAME),
     nickname: interaction.fields.getTextInputValue(FIELD_IDS.NICKNAME),
@@ -107,7 +109,7 @@ async function handleModalSubmit(interaction) {
     await archiveIntroduction(interaction, fields);
     log.info('MODAL', `archived | user=${tag} nickname=${fields.nickname}`);
 
-    await completeOnboarding(interaction.member, fields.nickname);
+    await completeOnboarding(member, fields.nickname);
     log.info('MODAL', `onboarding complete | user=${tag} nickname=${fields.nickname}`);
 
     await interaction.editReply('✅ 온보딩이 완료되었습니다! 다오랩-프렌즈 역할이 부여되었습니다.');
